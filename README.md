@@ -1,95 +1,86 @@
 S&P 500 Volatility Forecasting with GARCH(1,1)
 
-A hands-on quantitative finance project that fits a GARCH(1,1) model to ~18 years of real S&P 500 daily returns (2007–2026) and visualizes the resulting conditional volatility band. Built in Python with an accompanying interactive browser dashboard.
+What's going on here?
 
-Show Image Show Image Show Image
+GARCH(1,1) is a way to model how risky markets feel day to day. The core idea is simple: today's volatility depends on two things — how big yesterday's price shock was, and how volatile things already were. There's also a baseline level of risk that's always there, no matter what.
 
-
-Overview
-
-Financial markets do not have constant risk. Calm periods are followed by calm periods, and turbulent periods cluster together — a phenomenon called volatility clustering. A single GARCH(1,1) model captures this behavior remarkably well, which is why it remains one of the most widely used tools in risk management, option pricing, and Value-at-Risk estimation.
-
-This project downloads real S&P 500 index data, fits a GARCH(1,1) model, and produces a chart of daily returns wrapped in a ±2σ conditional volatility band that widens during crises (2008, 2020) and contracts during calm years.
-
-What is GARCH(1,1)?
-
-GARCH stands for Generalized Autoregressive Conditional Heteroskedasticity. The (1,1) version estimates tomorrow's variance from three components:
-
-σ²(t+1) = ω + α · ε²(t) + β · σ²(t)
-
-TermNameMeaningω (omega)BaselineA constant long-run risk floor that is always present.α · ε²(t)News / reactionHow strongly yesterday's market shock feeds into today's risk.β · σ²(t)Memory / persistenceHow strongly yesterday's volatility carries forward.
-
-The sum α + β measures persistence — how long a volatility shock lingers. For equity indices it is typically close to (but below) 1.0, meaning both calm and stormy regimes tend to last. On this dataset the fitted value is roughly 0.97, confirming the S&P 500's well-known "sticky" volatility.
-
-Features
+The model has three moving parts:
 
 
-Pulls real S&P 500 data directly from Yahoo Finance via yfinance.
-Fits GARCH(1,1) using the industry-standard arch library, with a Student's-t distribution to better capture fat-tailed crash days.
-Exports a high-resolution static chart of returns with the ±2σ volatility band.
-Renders an animated GIF of a rolling 120-day window sweeping across the full history.
-Includes a standalone, dependency-free interactive HTML dashboard that simulates the GARCH process live, with a β "memory" slider and a −5σ shock injector.
+ω (omega) — a floor. Markets are never perfectly calm, and this captures that.
+α · ε²(t) — how much yesterday's shock rattles today. Big move yesterday? Expect more uncertainty today.
+β · σ²(t) — how much yesterday's volatility carries over. Markets tend to stay nervous for a while after a scare.
 
 
-Repository contents
-
-FileDescriptiongarch_animation_colab.pyMain script — paste into a single Google Colab cell to fit the model and export the chart + animation.garch_dashboard.htmlStandalone interactive dashboard. Open in any browser, no installation required.README.mdThis file.
-
-Getting started
-
-Option A — Google Colab (recommended, zero setup)
+Add α and β together and you get a sense of how "sticky" volatility is. For the S&P 500, that number is usually around 0.97 — meaning once things get choppy, they stay choppy for a while. Calm periods also tend to last. It cuts both ways.
 
 
-Open a new notebook at colab.research.google.com.
-Copy the entire contents of garch_animation_colab.py into one cell.
-Run the cell (Shift + Enter). It installs dependencies, fits the model, and downloads garch_animation.gif and sp500_garch_static.png.
+What this project does
 
 
-Option B — Run locally
+Pulls live S&P 500 data straight from Yahoo Finance
+Fits the GARCH model using a Student's-t distribution (better at handling the wild swings you get on crash days)
+Saves a static chart showing daily returns with a ±2σ volatility band around them
+Creates an animated GIF of a rolling 120-day window moving through the full history
+Includes a self-contained HTML dashboard you can open in any browser — no install, no dependencies — with a slider to adjust volatility memory and a button to simulate a market shock
+
+
+
+What's in the repo
+
+FileWhat it isgarch_animation_colab.pyThe main script. Drop it into a Google Colab cell and run it.garch_dashboard.htmlThe interactive dashboard. Just open it in a browser.README.mdThis file.
+
+
+Running it
+
+The easy way — Google Colab
+
+
+Go to colab.research.google.com and open a blank notebook
+Paste the contents of garch_animation_colab.py into one cell
+Hit Shift + Enter — it'll install what it needs, fit the model, and download the outputs
+
+
+Locally
 
 bashpip install yfinance arch matplotlib pandas numpy
 python garch_animation_colab.py
 
-
-Note: the google.colab download lines at the bottom of the script only run inside Colab. Remove them when running locally — the output files are still saved to the working directory.
-
+One thing to note: the file-download lines at the bottom of the script are Colab-specific. If you're running locally, just delete those lines — the files still get saved to whatever folder you're in.
 
 
-Interactive dashboard
+The interactive dashboard
 
-Just double-click garch_dashboard.html, or open it in any modern browser. Drag the β memory slider to change how persistent volatility is, and press inject −5σ shock to watch the risk band balloon and slowly decay.
-
-How it works (pipeline)
+Double-click garch_dashboard.html and it opens in your browser. Drag the β slider to control how long volatility sticks around, and hit the shock button to watch what a −5σ event looks like as it slowly fades.
 
 
-Download S&P 500 (^GSPC) daily prices.
-Compute returns as the percentage change of the closing price, scaled by 100.
-Fit arch_model(returns, vol="Garch", p=1, q=1, mean="Constant", dist="t").
-Extract the day-by-day conditional_volatility series.
-Plot returns with a shaded ±2σ band (≈95% of daily moves should fall inside it under the model).
+How it actually works
 
 
-Sample interpretation
-
-A typical fit on this dataset yields:
-
-omega    ~ small positive   (baseline variance floor)
-alpha[1] ~ 0.10             (reaction to shocks)
-beta[1]  ~ 0.87             (persistence of volatility)
-alpha+beta ~ 0.97          (highly persistent — shocks fade slowly)
-nu       ~ 6-8             (fat tails: extreme days more common than a normal curve predicts)
-
-Tech stack
+Download daily closing prices for ^GSPC
+Compute daily returns (percentage change × 100)
+Fit the GARCH(1,1) model with a constant mean and Student's-t errors
+Pull out the day-by-day volatility estimate
+Plot returns with a shaded ±2σ band — on a well-fitted model, about 95% of days should land inside it
 
 
-Python — yfinance, arch, pandas, numpy, matplotlib
-HTML / JavaScript / Canvas — for the interactive dashboard (no external dependencies)
+
+What the numbers usually look like
+
+A typical fit gives you something like:
 
 
-Disclaimer
+omega — small positive number (the baseline floor)
+alpha — around 0.10 (how much each shock matters)
+beta — around 0.87 (how long it lingers)
+alpha + beta — around 0.97 (shocks fade, but slowly)
+nu — somewhere between 6 and 8 (fat tails; big days happen more often than a normal distribution would predict)
 
-This project is for educational purposes only. It is not financial advice and should not be used for live trading or investment decisions. Past volatility is not a guarantee of future risk.
 
-License
 
-Released under the MIT License. Feel free to fork, adapt, and build on it.
+Tech
+
+Python (yfinance, arch, pandas, numpy, matplotlib) for the model and charts. Plain HTML, JavaScript, and Canvas for the dashboard — nothing to install.
+
+
+This is a learning project, not financial advice. Don't trade off it.
